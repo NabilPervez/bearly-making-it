@@ -1,3 +1,4 @@
+import React, { useRef, useState } from 'react';
 import { useFrame } from "@react-three/fiber";
 import { useStore } from "../store";
 import { useGame } from '../context/GameContext'
@@ -10,19 +11,18 @@ import {
     OpType
 } from "../domain/cooking";
 import { GRILL_POS, REGISTER_POS } from "../components/Base"
+import { UPGRADE_AREA_POS } from "../components/UpgradeStation"
 
 // Constants
 const INTERACTION_RADIUS = 2.0;
 
-export function InteractionManager() {
+export function InteractionManager({ onUpgradeShoppingChange }) {
     const { playerRef } = useGame();
 
-    // Selectors
-    // We use granular selectors to avoid re-renders of THIS component (though it has no DOM),
-    // but useStore.getState() is better for useFrame loops to avoid React overhead.
-    // However, for clean "Hybrid" approach, we can use selectors for stable config 
-    // and getState for volatile data if performance demands. 
-    // Given the scale, direct store access inside useFrame is fine and most performant.
+    // We use a local state to debounce/throttle UI updates for Shopping
+    // But since this is inside useFrame, we shouldn't setState heavily.
+    // Instead we check if the value CHANGED before calling the callback.
+    const wasShoppingRef = useRef(false);
 
     useFrame((state, delta) => {
         if (!playerRef.current) return;
@@ -58,19 +58,13 @@ export function InteractionManager() {
             }
         }
 
-        // Register Interaction Area
-        const regVec = { x: REGISTER_POS[0], y: REGISTER_POS[1], z: REGISTER_POS[2] };
-        if (isWithinRange(playerPos, regVec, INTERACTION_RADIUS)) {
-            const sellOp = checkSellInteraction(currentStore.inventory);
-            if (sellOp.type === OpType.SELL_MEAT) {
-                // For "Arcade" feel, we might want to throttle this so it's not instant dump.
-                // The GDD says "1.0s per sale".
-                // We can implement a timer here or just trust the tick rate combined with a simple throttle.
-                // For now, let's just sell 1 per 10 frames or something simple?
-                // Or, strictly separate "Intent" from "Action".
-                // Let's rely on the requested "Logic" which was "1s per steak".
-                // We can use a local static timer, but since this is a functional component key, we can use a ref.
-            }
+        // 3. Upgrade Station Detection
+        const upgVec = { x: UPGRADE_AREA_POS[0], y: UPGRADE_AREA_POS[1], z: UPGRADE_AREA_POS[2] };
+        const isShopping = isWithinRange(playerPos, upgVec, INTERACTION_RADIUS);
+
+        if (isShopping !== wasShoppingRef.current) {
+            wasShoppingRef.current = isShopping;
+            onUpgradeShoppingChange(isShopping);
         }
     });
 
@@ -106,5 +100,3 @@ export function SellingLogic() {
     });
     return null;
 }
-
-import React from 'react';

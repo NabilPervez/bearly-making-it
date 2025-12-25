@@ -1,16 +1,22 @@
+import { useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import './index.css'
 import { Player } from './components/Player'
 import { Base } from './components/Base'
+import { UpgradeStation } from './components/UpgradeStation'
 import { Enemies } from './components/Enemies'
+import { Workers } from './components/Workers'
 import { InteractionManager, SellingLogic } from './systems/InteractionManager'
 import { EnemySystem } from './systems/EnemySystem'
+import { WorkerSystem } from './systems/WorkerSystem'
 import { GameProvider } from './context/GameContext'
 import { useStore } from './store'
 
 // Wrapper to bridge non-Canvas state with Canvas children
 function GameCanvas() {
+  const [isShopping, setShopping] = useState(false);
+
   return (
     <Canvas camera={{ position: [5, 5, 5], fov: 50 }} shadows>
       <GameProvider>
@@ -19,12 +25,15 @@ function GameCanvas() {
 
         <Player />
         <Base />
+        <UpgradeStation isOpen={isShopping} />
+        <Workers />
         <Enemies />
 
         {/* Logic Systems */}
-        <InteractionManager />
+        <InteractionManager onUpgradeShoppingChange={setShopping} />
         <SellingLogic />
         <EnemySystem />
+        <WorkerSystem />
 
         <gridHelper args={[50, 50, 0xffffff, 0xaaaaaa]} position={[0, -0.01, 0]} />
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
@@ -49,7 +58,7 @@ function App() {
         <div className="flex flex-col gap-2">
           <div className="bg-white/80 backdrop-blur opacity-90 p-2 rounded-lg shadow-lg border-2 border-slate-800">
             <h1 className="text-xl font-bold text-slate-800">Bearly Making It</h1>
-            <div className="text-xs text-slate-600 font-mono">Build 0.0.4</div>
+            <div className="text-xs text-slate-600 font-mono">Build 0.0.6</div>
           </div>
           <div className="bg-red-100/80 backdrop-blur p-2 rounded-lg shadow border-2 border-red-800 w-48">
             <div className="text-xs font-bold text-red-800 mb-1">Health</div>
